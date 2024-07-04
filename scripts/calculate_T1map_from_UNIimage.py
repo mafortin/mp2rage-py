@@ -75,12 +75,12 @@ plt.show()
 # Load UNI data
 nii = nb.load(uni_filename)
 data = nii.get_fdata()
-print('Min & Max value in MP2RAGE UNI image:', round(np.min(data),0), round(np.max(data),0)) # MAF: Sanity check to check it is from 0 to 4095
+print('Sanity Check: Min & Max value in MP2RAGE UNI image:', round(np.min(data),0), round(np.max(data),0)) # MAF: Sanity check to check it is from 0 to 4095
 
 # Scale range from [0, 4095]] to [-0.5, 0.5]
 data /= 4095
 data -= 0.5
-print('Min & Max value of rescaled MP2RAGE UNI image:', round(np.min(data),1), round(np.max(data),1)) # MAF: Sanity check
+print('Sanity Check: Min & Max value of rescaled MP2RAGE UNI image:', round(np.min(data),1), round(np.max(data),1)) # MAF: Sanity check
 
 # Compute the T1 map from the lookuptable
 T1map = map_UNI_to_T1(img_UNI=data, arr_UNI=arr_UNI, arr_T1=arr_T1)
@@ -91,7 +91,10 @@ img_out = nb.Nifti1Image(T1map_ms, affine=nii.affine)
 basename = nii.get_filename().split(os.extsep, 1)[0]
 out_name = "{}_T1.nii.gz".format(basename)
 nb.save(img_out, out_name)
-print("T1 map saved as %s: " % out_name)
+print("T1 map saved as: %s" % out_name)
+
+# =============================================================================
+# Show for the sake of showing
 
 # Show rescaled MP2RAGE UNI image
 fig = plt.figure(figsize=(12, 6))

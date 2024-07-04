@@ -181,10 +181,10 @@ def compute_T1_lookup_table(T1s, TR_MP2RAGE, TR_GRE, NR_RF, PF_RF, encoding, TI_
         Longitudinal signal at time=0.
     NR_RF : int
         Number of radio frequency pulses in one GRE readout.
-    PF : float
+    PF_RF : float
         Partial Fourier factor applied on the number of RF pulses/shots (inner loop [i.e., short TRs in each RAGE block])
         The Siemens acquisition parameter related to that value is 'Slice partial Fourier' (which can bring confusion)
-    enc : string
+    encoding : string
         K-space encoding scheme used. Siemens' acquisition parameter: 'Reordering'. Usually 'Linear', 'centric' or 'radial'.
         The provided script is designed for 'linear' only at the moment, but 'centric' encoding should be pretty straightforward
         to implement.
@@ -237,15 +237,15 @@ def compute_T1_lookup_table(T1s, TR_MP2RAGE, TR_GRE, NR_RF, PF_RF, encoding, TI_
     """
 
     # Calculating the proper timings based on Partial Fourier
-    if PF == 1:
+    if PF_RF == 1:
 
-        if enc == 'linear':
+        if encoding == 'linear':
             # Derived time parameters
             TA = TI_1 - (NR_RF * TR_GRE / 2)
             TB = TI_2 - (TI_1 + (NR_RF * TR_GRE / 2))
             TC = TR_MP2RAGE - (TI_2 + (NR_RF * TR_GRE / 2)) # MAF: Typo changed from TI_1 to TI_2 (correct value).
 
-        elif enc == 'centric':
+        elif encoding == 'centric':
             # Derived time parameters
             TA = TI_1
             TB = TI_2 - (TI_1 + (NR_RF * TR_GRE))
@@ -253,9 +253,9 @@ def compute_T1_lookup_table(T1s, TR_MP2RAGE, TR_GRE, NR_RF, PF_RF, encoding, TI_
 
     else: # If there is PF applied on the RAGE block/RF pulses
 
-        NR_RFeff = PF * NR_RF  #'Effective' nb. of RF pulses/shots used when Partial Fourier is applied.
+        NR_RFeff = PF_RF * NR_RF  #'Effective' nb. of RF pulses/shots used when Partial Fourier is applied.
 
-        if enc == 'linear':
+        if encoding == 'linear':
 
             NR_RFaf = NR_RF/2 #Nb. of RF pulses **after** reaching k-space center, which should stay unchanged even with PF applied.
             NR_RFbef = NR_RFeff - NR_RFaf #Nb. of RF pulses **before** reaching k-space center. PF is applied at the beginning to reach the k-space center as soon as possible.
@@ -265,7 +265,7 @@ def compute_T1_lookup_table(T1s, TR_MP2RAGE, TR_GRE, NR_RF, PF_RF, encoding, TI_
             TB = TI_2 - (TI_1 + (NR_RFaf * TR_GRE))
             TC = TR_MP2RAGE - (TI_2 + (NR_RFaf * TR_GRE))  # MAF: Typo changed from TI_1 to TI_2 (correct value).
 
-        elif enc == 'centric':
+        elif encoding == 'centric':
 
             # Derived time parameters
             TA = TI_1
