@@ -342,6 +342,9 @@ def map_UNI_to_T1(img_UNI, arr_UNI, arr_T1):
 
 def coreg_and_resample_B1map(B1data, mp2ragedata):
 
+    fixed_image = mp2ragedata
+    moving_image = B1data # You want to register and resample the B1 map to the MP2RAGE UNI image
+
     # Rigid registration and Resampling (tusen takk til ChatGPT for denne)
     # Initial alignment
     initial_transform = sitk.CenteredTransformInitializer(
@@ -351,12 +354,12 @@ def coreg_and_resample_B1map(B1data, mp2ragedata):
         sitk.CenteredTransformInitializerFilter.GEOMETRY
     )
 
-    # Setup registration method
+    # Setup registration method (can/could be optimized based on your requirements/data)
     registration_method = sitk.ImageRegistrationMethod()
     registration_method.SetMetricAsMeanSquares()
     registration_method.SetOptimizerAsGradientDescent(learningRate=1.0, numberOfIterations=100,
                                                       convergenceMinimumValue=1e-6, convergenceWindowSize=10)
-    registration_method.SetInterpolator(sitk.sitkLinear)
+    registration_method.SetInterpolator(sitk.sitkBSpline) # MAF: Changed from linear to BSpline
     registration_method.SetInitialTransform(initial_transform, inPlace=False)
     registration_method.SetOptimizerScalesFromPhysicalShift()
 
@@ -365,5 +368,13 @@ def coreg_and_resample_B1map(B1data, mp2ragedata):
 
     print(f"Optimizer's stopping condition: {registration_method.GetOptimizerStopConditionDescription()}")
     print(f"Final metric value: {registration_method.GetMetricValue()}")
+
+    # Apply the final transform to the moving image
+    moving_resampled = sitk.Resample(moving_image, fixed_image, final_transform, sitk.sitkLinear, 0.0, moving_image.GetPixelID())
+
+    # Save the resampled moving image
+    sitk.WriteImage(moving_resampled, 'coreg_resamp_B1map.nii')
+
+    B1coreg_resamp = moving_resampled
 
     return B1coreg_resamp
