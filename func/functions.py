@@ -388,9 +388,21 @@ def coreg_and_resample_B1map(path2B1, path2mp2rage):
     new_b1pathname = '%s/%s' % (dir2B1,new_B1filename)
     sitk.WriteImage(moving_resampled, new_b1pathname)
 
-    # Change back to a nibael image object
+    ### MAF: To be removed?
+    # Change back to a nibabel image object (personal preference to work with nibabel images than sitk.Images)
     B1coreg_resamp_data = sitk.GetArrayFromImage(moving_resampled)
-    B1coreg_resamp = nib.Nifti1Image(B1coreg_resamp_data, affine=final_transform)
+
+    # Get image origin and spacing from SimpleITK image
+    origin = moving_resampled.GetOrigin()
+    spacing = moving_resampled.GetSpacing()
+    # Construct an affine transformation matrix
+    affine_matrix = np.eye(4)
+    affine_matrix[0, 0] = spacing[0]
+    affine_matrix[1, 1] = spacing[1]
+    affine_matrix[2, 2] = spacing[2]
+    affine_matrix[0:3, 3] = origin
+
+    B1coreg_resamp = nib.Nifti1Image(B1coreg_resamp_data, affine=affine_matrix)
 
     print("New registered and resampled B1 map saved to: %s" % new_b1pathname)
     print("Rigid registration and resampling of the B1 map to the MP2RAGE completed! :)")

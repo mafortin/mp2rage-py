@@ -33,17 +33,16 @@ plotting.plot_anat(mp2rage, figure=fig, cut_coords=(0,0,0), display_mode='ortho'
 
 b1coreg_resamp = coreg_and_resample_B1map(b1map_pathname, mp2rage_pathname)
 
-
 # =============================================================================
 # Show for the sake of showing
 
 # Show B1 map
 fig = plt.figure(figsize=(12, 6))
 plotting.plot_anat(b1coreg_resamp, figure=fig, cut_coords=(0,0,0), display_mode='ortho', draw_cross=False, vmin=200, vmax=1200, colorbar=True, annotate=True, title="B1 map (moving image)")
-#plt.show()
+plt.show()
 
 # Show MP2RAGE UNI image
-fig = plt.figure(figsize=(12, 6))
-plotting.plot_anat(mp2rage, figure=fig, cut_coords=(0,0,0), display_mode='ortho', draw_cross=False, vmin=0, vmax=4095, colorbar=True, annotate=True, title="MP2RAGE UNI (fixed image)")
+#fig = plt.figure(figsize=(12, 6))
+#plotting.plot_anat(mp2rage, figure=fig, cut_coords=(0,0,0), display_mode='ortho', draw_cross=False, vmin=0, vmax=4095, colorbar=True, annotate=True, title="MP2RAGE UNI (fixed image)")
 #plt.show()
 
