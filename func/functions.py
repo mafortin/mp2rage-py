@@ -1,6 +1,7 @@
 """Core functions."""
 import numpy as np
-
+import simpleITK as sitk
+import nibabel as nib
 
 def compute_UNI(inv1_re, inv1_im, inv2_re, inv2_im, scale=False):
     """Compute UNI image.
@@ -338,3 +339,31 @@ def map_UNI_to_T1(img_UNI, arr_UNI, arr_T1):
     img_T1 = np.interp(img_UNI, xp=arr_UNI, fp=arr_T1)
 
     return img_T1
+
+def coreg_and_resample_B1map(B1data, mp2ragedata):
+
+    # Rigid registration and Resampling (tusen takk til ChatGPT for denne)
+    # Initial alignment
+    initial_transform = sitk.CenteredTransformInitializer(
+        fixed_image,
+        moving_image,
+        sitk.Euler3DTransform(),
+        sitk.CenteredTransformInitializerFilter.GEOMETRY
+    )
+
+    # Setup registration method
+    registration_method = sitk.ImageRegistrationMethod()
+    registration_method.SetMetricAsMeanSquares()
+    registration_method.SetOptimizerAsGradientDescent(learningRate=1.0, numberOfIterations=100,
+                                                      convergenceMinimumValue=1e-6, convergenceWindowSize=10)
+    registration_method.SetInterpolator(sitk.sitkLinear)
+    registration_method.SetInitialTransform(initial_transform, inPlace=False)
+    registration_method.SetOptimizerScalesFromPhysicalShift()
+
+    # Execute registration
+    final_transform = registration_method.Execute(fixed_image, moving_image)
+
+    print(f"Optimizer's stopping condition: {registration_method.GetOptimizerStopConditionDescription()}")
+    print(f"Final metric value: {registration_method.GetMetricValue()}")
+
+    return B1coreg_resamp
