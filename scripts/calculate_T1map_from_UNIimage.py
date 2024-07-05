@@ -25,14 +25,8 @@ NR_RF = 224 # MAF: Nb. of small flip angles/shots in each RAGE block, Siemens' e
 PF_RF = 6/8 # MAF: Very important that this is the Partial Fourier Factor on the **INNER LOOP** (short TR), not the outer loop (long TR). This changes the moment the center of k-space is crossed, and not the total acquisition time [it's the Phase Partial Fourier Factor that reduces scan time]. Very confusing naming convention from Siemens/developer's team.
 TR_GRE = 0.0072
 
-
 # =============================================================================
 # Miscellaneous values that *can* be modified by the user (no need to change them tho)
-
-# WM/GM/CSF=1.05/1.85/3.35 s  (at 7T)
-T1wm = 1.05
-T1gm = 1.85
-T1csf = 3.35
 
 # Boundaries to calculate the T1 lookuptable
 T1min = 0.001 #s
@@ -47,30 +41,6 @@ T1s = np.linspace(T1min, T1max, nr_timepoints)
 arr_UNI, arr_T1 = compute_T1_lookup_table(
     T1s=T1s, TR_MP2RAGE=TR_MP2RAGE, TR_GRE=TR_GRE, NR_RF=NR_RF, PF_RF=PF_RF, encoding=encoding, TI_1=TI_1, TI_2=TI_2, FA_1=FA_1, FA_2=FA_2, M0=1.0, eff=eff, only_bijective_part=True)
 
-# Same thing but only to show the full extent of the lookuptable in case of considerable overlapping
-# Can be removed/commented once you know that your lookuptable is not overly overlapping at long T1 values.
-arr_UNI_full, arr_T1_full = compute_T1_lookup_table(
-    T1s=T1s, TR_MP2RAGE=TR_MP2RAGE, TR_GRE=TR_GRE, NR_RF=NR_RF, PF_RF=PF_RF, encoding=encoding, TI_1=TI_1, TI_2=TI_2, FA_1=FA_1, FA_2=FA_2, M0=1.0, eff=eff, only_bijective_part=False)
-
-# Plot UNI vs T1
-fig = plt.plot(arr_UNI_full, arr_T1_full, linewidth=1.5)
-plt.axhline(y=T1wm, color='k', linestyle='--', linewidth=0.75, label="T1 WM")
-plt.axhline(y=T1gm, color='k', linestyle='--', linewidth=0.75, label="T1 GM")
-plt.axhline(y=T1csf, color='k', linestyle='--', linewidth=0.75, label="T1 CSF")
-
-# Add annotation
-plt.annotate('WM', fontweight='bold', xy=(-0.45, T1wm+0.05), xytext=(-0.45, T1wm+0.05))
-plt.annotate('GM', fontweight='bold', xy=(-0.45, T1gm+0.05), xytext=(-0.45, T1gm+0.05))
-plt.annotate('CSF', fontweight='bold', xy=(-0.45, T1csf+0.05), xytext=(-0.45, T1csf+0.05))
-
-# Plot setup
-plt.xlim(-0.51, 0.51)
-plt.ylim(0, 5.01)
-plt.xlabel("MP2RAGE UNI Signal", fontweight='bold')
-plt.ylabel("T1 [s]", rotation='horizontal', labelpad=20, fontweight='bold')
-plt.title("MP2RAGE UNI - T1 lookuptable", fontweight='bold')
-plt.show()
-
 # =============================================================================
 # Load UNI data
 nii = nb.load(uni_filename)
@@ -84,10 +54,10 @@ print('Sanity Check: Min & Max value of rescaled MP2RAGE UNI image:', round(np.m
 
 # Compute the T1 map from the lookuptable
 T1map = map_UNI_to_T1(img_UNI=data, arr_UNI=arr_UNI, arr_T1=arr_T1)
-T1map_ms = T1map*1000  # Seconds to milliseconds
+T1map *= 1000  # Seconds to milliseconds
 
 # Save as T1 map as nifti image
-img_out = nb.Nifti1Image(T1map_ms, affine=nii.affine)
+img_out = nb.Nifti1Image(T1map, affine=nii.affine)
 basename = nii.get_filename().split(os.extsep, 1)[0]
 out_name = "{}_T1.nii.gz".format(basename)
 nb.save(img_out, out_name)
