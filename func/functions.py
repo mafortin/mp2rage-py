@@ -1,6 +1,7 @@
 """Core functions."""
+import os
 import numpy as np
-import simpleITK as sitk
+import SimpleITK as sitk
 import nibabel as nib
 
 def compute_UNI(inv1_re, inv1_im, inv2_re, inv2_im, scale=False):
@@ -340,10 +341,17 @@ def map_UNI_to_T1(img_UNI, arr_UNI, arr_T1):
 
     return img_T1
 
-def coreg_and_resample_B1map(B1data, mp2ragedata):
+def coreg_and_resample_B1map(path2B1, path2mp2rage):
 
-    fixed_image = mp2ragedata
-    moving_image = B1data # You want to register and resample the B1 map to the MP2RAGE UNI image
+    print("Rigid registration and resampling of the B1 map to the MP2RAGE started.")
+    # These are the images/objects, not the numpy 3D arrays
+    fixed_image = sitk.ReadImage(path2mp2rage)
+    fixed_image_float = sitk.Cast(fixed_image, sitk.sitkFloat32)
+    moving_image = sitk.ReadImage(path2B1) # You want to register and resample the B1 map to the MP2RAGE UNI image
+    moving_image_float = sitk.Cast(moving_image, sitk.sitkFloat32)
+
+    ## For later stage to output the results into a nibabel object get the affine.
+    #moving_image_nib = nib.load(path2B1)
 
     # Rigid registration and Resampling (tusen takk til ChatGPT for denne)
     # Initial alignment
@@ -364,17 +372,27 @@ def coreg_and_resample_B1map(B1data, mp2ragedata):
     registration_method.SetOptimizerScalesFromPhysicalShift()
 
     # Execute registration
-    final_transform = registration_method.Execute(fixed_image, moving_image)
+    final_transform = registration_method.Execute(fixed_image_float, moving_image_float)
 
     print(f"Optimizer's stopping condition: {registration_method.GetOptimizerStopConditionDescription()}")
     print(f"Final metric value: {registration_method.GetMetricValue()}")
 
     # Apply the final transform to the moving image
-    moving_resampled = sitk.Resample(moving_image, fixed_image, final_transform, sitk.sitkLinear, 0.0, moving_image.GetPixelID())
+    moving_resampled = sitk.Resample(moving_image_float, fixed_image_float, final_transform, sitk.sitkBSpline, 0.0, moving_image_float.GetPixelID())
 
     # Save the resampled moving image
-    sitk.WriteImage(moving_resampled, 'coreg_resamp_B1map.nii')
+    dir2B1 = os.path.dirname(path2B1)
+    B1filename_withnii = os.path.basename(path2B1)
+    B1filename, extension = os.path.splitext(B1filename_withnii)
+    new_B1filename = '%s_rigreg_resamp.nii' % (B1filename)
+    new_b1pathname = '%s/%s' % (dir2B1,new_B1filename)
+    sitk.WriteImage(moving_resampled, new_b1pathname)
 
-    B1coreg_resamp = moving_resampled
+    # Change back to a nibael image object
+    B1coreg_resamp_data = sitk.GetArrayFromImage(moving_resampled)
+    B1coreg_resamp = nib.Nifti1Image(B1coreg_resamp_data, affine=final_transform)
+
+    print("New registered and resampled B1 map saved to: %s" % new_b1pathname)
+    print("Rigid registration and resampling of the B1 map to the MP2RAGE completed! :)")
 
     return B1coreg_resamp
