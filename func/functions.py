@@ -412,15 +412,14 @@ def coreg_and_resample_B1map_sitk(path2B1, path2mp2rage):
     return B1coreg_resamp
 
 def coreg_and_resample_B1map(path2B1, path2mp2rage):
-
     print("Rigid registration and resampling of the B1 map to the MP2RAGE started.")
 
-    # These are the images/objects, not the numpy 3D arrays
+    # Load fixed and moving images
     fixed_image = nib.load(path2mp2rage)
     moving_image = nib.load(path2B1)
 
-    fixed_data = fixed_image.get_fdata()
-    moving_data = moving_image.get_fdata()
+    fixed_data = fixed_image.get_fdata(dtype=np.float32)
+    moving_data = moving_image.get_fdata(dtype=np.float32)
 
     fixed_affine = fixed_image.affine
     moving_affine = moving_image.affine
@@ -432,15 +431,9 @@ def coreg_and_resample_B1map(path2B1, path2mp2rage):
     # Perform registration
     registration = ants.registration(fixed_ants, moving_ants, type_of_transform='Affine', verbose=False)
 
-    # If using Scipy for the resampling step:
-
     # Get the transformation matrix
     transform_matrix_file = registration['fwdtransforms'][0]
-
-    # Load the affine transformation
     transform = ants.read_transform(transform_matrix_file)
-
-    # Convert the transformation to a numpy array
     transform_parameters = transform.parameters
 
     # Affine transform parameters in ANTs are 12 elements [r11, r12, r13, t1, r21, r22, r23, t2, r31, r32, r33, t3]
@@ -459,7 +452,7 @@ def coreg_and_resample_B1map(path2B1, path2mp2rage):
     offset = transform_matrix[:3, 3]
 
     # Apply the transformation using scipy
-    resampled_moving = affine_transform(moving_data, affine_matrix, offset=offset, output_shape=fixed_data.shape)
+    resampled_moving = affine_transform(moving_data, affine_matrix, offset=offset, output_shape=fixed_data.shape, order=1)
 
     # Get the new filename for the coregistered and resampled B1 map
     dir2B1 = os.path.dirname(path2B1)
@@ -471,30 +464,27 @@ def coreg_and_resample_B1map(path2B1, path2mp2rage):
     resampled_nib = nib.Nifti1Image(resampled_moving, fixed_affine)
     nib.save(resampled_nib, new_b1pathname)
 
-    print("New registered and resampled B1 map saved to: %s" % new_b1pathname)
-
-    B1coreg_resamp = resampled_nib
-
+    print("New registered and resampled B1 map saved to:", new_b1pathname)
     print("Rigid registration and resampling of the B1 map to the MP2RAGE completed! :)")
 
-    return B1coreg_resamp
+    return resampled_nib
 
 
 # Function to resample moving_data to match fixed_data
-def resample_to_match(path2B1, path2mp2rage):
+def resample_B1map(path2B1, path2mp2rage):
 
     # Load the fixed and moving images
     fixed_img = nib.load(path2mp2rage)
     moving_img = nib.load(path2B1)
 
     # Get the image data as numpy arrays and metadata
-    fixed_data = fixed_img.get_fdata()
-    moving_data = moving_img.get_fdata()
+    fixed_data = fixed_img.get_fdata(dtype=np.float32)
+    moving_data = np.array(moving_img.get_fdata(dtype=np.float32))
 
     fixed_affine = fixed_img.affine
-    print("Fixed affine: ", fixed_affine)
+    #print("Fixed affine: ", fixed_affine)
     moving_affine = moving_img.affine
-    print("Moving affine: ", moving_affine)
+    #print("Moving affine: ", moving_affine)
 
     # Get metadata from images
     fixed_shape = fixed_data.shape
@@ -512,26 +502,26 @@ def resample_to_match(path2B1, path2mp2rage):
 
     # Calculate scaling factors
     scaling_factors = [fs / ms for fs, ms in zip(fixed_spacing, moving_spacing)]
-    print("Scaling Factors:", scaling_factors)
+    #print("Scaling Factors:", scaling_factors)
 
     # Calculate affine transformation matrix
     transform_matrix = np.diag(scaling_factors + [1])  # Identity matrix with scaling factors
-    print("Transform Matrix:")
-    print(transform_matrix)
 
     # Calculate translation vector
     translation_vector = fixed_origin - moving_origin.dot(np.diag(scaling_factors))
-    print("Translation Vector:", translation_vector)
+    #print("Translation Vector:", translation_vector)
 
     # Combine into a 4x4 transformation matrix
     transform_matrix[:3, 3] = translation_vector
+    print("Transform Matrix:")
+    print(transform_matrix)
 
     # Define the output shape based on the fixed image shape
     output_shape = fixed_shape
     print("Output shape: ", output_shape)
 
     # Perform resampling using affine_transform from scipy.ndimage
-    resampled_data = affine_transform(moving_data, transform_matrix, output_shape=output_shape)
+    resampled_data = affine_transform(moving_data, transform_matrix, output_shape=output_shape, order=1)
 
     # Get the new filename for the coregistered and resampled B1 map
     dir2B1 = os.path.dirname(path2B1)
@@ -545,4 +535,4 @@ def resample_to_match(path2B1, path2mp2rage):
     nib.save(resampled_img, new_b1pathname)
     print("New resampled B1 map saved to: %s" % new_b1pathname)
 
-    return resampled_data, resampled_img
+    return resampled_img
