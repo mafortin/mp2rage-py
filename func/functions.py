@@ -403,6 +403,7 @@ def coreg_and_resample_B1map_sitk(path2B1, path2mp2rage):
     affine_matrix[1, 1] = spacing[1]
     affine_matrix[2, 2] = spacing[2]
     affine_matrix[0:3, 3] = origin
+    print("Affine matrix: ", affine_matrix)
 
     B1coreg_resamp = nib.Nifti1Image(B1coreg_resamp_data, affine=affine_matrix)
 
@@ -410,6 +411,41 @@ def coreg_and_resample_B1map_sitk(path2B1, path2mp2rage):
     print("Rigid registration and resampling of the B1 map to the MP2RAGE completed! :)")
 
     return B1coreg_resamp
+
+"""
+def resample_B1map_itk(path2B1, path2mp2rage):
+
+    print("Rigid registration and resampling of the B1 map to the MP2RAGE started.")
+    # These are the images/objects, not the numpy 3D arrays
+    fixed_image = sitk.ReadImage(path2mp2rage)
+    fixed_image_float = sitk.Cast(fixed_image, sitk.sitkFloat32)
+    moving_image = sitk.ReadImage(path2B1) # You want to register and resample the B1 map to the MP2RAGE UNI image
+    moving_image_float = sitk.Cast(moving_image, sitk.sitkFloat32)
+
+    # Define the resampler
+    resampler = sitk.ResampleImageFilter()
+    resampler.SetReferenceImage(fixed_image)
+    resampler.SetTransform(transform)
+    resampler.SetInterpolator(sitk.sitkLinear)
+    resampler.SetDefaultPixelValue(0)
+    resampler.SetOutputPixelType(sitk.sitkFloat32)
+
+    # Perform the resampling
+    resampled_image = resampler.Execute(moving_image)
+
+    # Save the resampled image
+    sitk.WriteImage(resampled_image, output_image_path)
+
+    # Save the resampled moving image
+    dir2B1 = os.path.dirname(path2B1)
+    B1filename_withnii = os.path.basename(path2B1)
+    B1filename, extension = os.path.splitext(B1filename_withnii)
+    new_B1filename = '%s_rigreg_resamp.nii' % (B1filename)
+    new_b1pathname = '%s/%s' % (dir2B1, new_B1filename)
+    sitk.WriteImage(moving_resampled, new_b1pathname)
+
+    return resampled_sitk
+"""
 
 def coreg_and_resample_B1map(path2B1, path2mp2rage):
     print("Rigid registration and resampling of the B1 map to the MP2RAGE started.")
@@ -536,3 +572,11 @@ def resample_B1map(path2B1, path2mp2rage):
     print("New resampled B1 map saved to: %s" % new_b1pathname)
 
     return resampled_img
+
+
+# B1 correction step (requires a B1 map resampled to the MP2RAGE [same resolution])
+def b1_correction():
+
+
+
+    return t1map_b1cor

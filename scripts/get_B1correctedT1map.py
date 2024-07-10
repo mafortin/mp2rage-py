@@ -6,7 +6,7 @@ import numpy as np
 import nibabel as nib
 from nilearn import plotting
 import matplotlib.pyplot as plt
-from func.functions import coreg_and_resample_B1map, resample_B1map
+from func.functions import coreg_and_resample_B1map, resample_B1map, coreg_and_resample_B1map_sitk
 
 # Get paths of both the B1 map (moving image) and MP2RAGE UNI (fixed image)
 b1map_pathname = '/home/mafortin/OneDrive/PhD/Data/IMPARK-test-b1cor-mp2rage/sub-01/ses-01/anat/3_b1map_tra_p2_cp_adj_vol.nii'
@@ -31,7 +31,7 @@ plotting.plot_anat(mp2rage, figure=fig, cut_coords=(0,0,0), display_mode='ortho'
 # =============================================================================
 # Apply rigid registration and resampling of the B1 map to the MP2RAGE UNI image
 
-b1_coreg_resamp = coreg_and_resample_B1map(b1map_pathname, mp2rage_pathname)
+b1_coreg_resamp = coreg_and_resample_B1map_sitk(b1map_pathname, mp2rage_pathname)
 
 # Resample the moving image to match the fixed image
 #b1_resamp_img = resample_B1map(b1map_pathname, mp2rage_pathname)
